@@ -19,3 +19,6 @@ go/vendor/
 # Python compiled files
 *.pyo
 *.pyc
+
+# Config file
+config.py
