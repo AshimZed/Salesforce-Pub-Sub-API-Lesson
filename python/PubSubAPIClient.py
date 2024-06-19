@@ -20,8 +20,8 @@ latest_replay_id = None
 with open(certifi.where(), 'rb') as f:
     creds = grpc.ssl_channel_credentials(f.read())
 with grpc.secure_channel('api.pubsub.salesforce.com:7443', creds) as channel:
-    username = 'admin@dex450.20762.com'
-    password = 'password@1234hUFUAAWEmSqAL7n6Y3QleOSB'
+    username = config.USERNAME
+    password = config.PASSWORD
     url = 'https://awcomputing454.my.salesforce.com/services/Soap/u/59.0/'
     headers = {'content-type': 'text/xml', 'SOAPAction': 'login'}
     xml = f"""<soapenv:Envelope xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/'
@@ -57,7 +57,7 @@ with grpc.secure_channel('api.pubsub.salesforce.com:7443', creds) as channel:
         ret = reader.read(decoder)
         return ret
     
-    mysubtopic = "/data/OpportunityChangeEvent"
+    mysubtopic = "/data/AccountChangeEvent"
     print('Subscribing to ' + mysubtopic)
     substream = stub.Subscribe(fetchReqStream(mysubtopic),
             metadata=authmetadata)
@@ -71,8 +71,11 @@ with grpc.secure_channel('api.pubsub.salesforce.com:7443', creds) as channel:
                     pb2.SchemaRequest(schema_id=schemaid),
                     metadata=authmetadata).schema_json
             decoded = decode(schema, payloadbytes)
-            print("Got an event!", json.dumps(decoded))
+            entity_name = decoded['ChangeEventHeader']['entityName']
+            change_type = decoded['ChangeEventHeader']['changeType']
+            if change_type == 'CREATE':
+                print("Welcome", decoded['Name'], "to the Johnny Spell's Family!")
         else:
-            print("[", time.strftime('%b %d, %Y %l:%M%p %Z'),
-            "] The subscription is active.")
+            print("[", time.strftime('%b %d, %Y %I:%M%p %Z'),
+                        "] The subscription is active.")
         latest_replay_id = event.latest_replay_id
