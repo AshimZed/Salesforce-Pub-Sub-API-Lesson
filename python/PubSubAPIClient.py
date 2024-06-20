@@ -8,7 +8,6 @@ import avro.schema
 import avro.io
 import time
 import certifi
-import json
 import config
 
 semaphore = threading.Semaphore(1) # Semaphore because Python's gRPC shuts down immediately after the call is made
@@ -57,25 +56,25 @@ with grpc.secure_channel('api.pubsub.salesforce.com:7443', creds) as channel:
         ret = reader.read(decoder)
         return ret
     
-    mysubtopic = "/data/AccountChangeEvent"
+    mysubtopic = "/data/AccountChangeEvent"                                                 # Pick the topic you want to subscribe to
     print('Subscribing to ' + mysubtopic)
-    substream = stub.Subscribe(fetchReqStream(mysubtopic),
+    substream = stub.Subscribe(fetchReqStream(mysubtopic),                                  # Subscribe to the topic
             metadata=authmetadata)
-    for event in substream:
-        if event.events:
-            semaphore.release()
+    for event in substream:                                                                 # Listen for events                                      
+        if event.events: 
+            semaphore.release()                                                             # Release the semaphore to allow the next event to be received
             print("Number of events received: ", len(event.events))
-            payloadbytes = event.events[0].event.payload
-            schemaid = event.events[0].event.schema_id
+            payloadbytes = event.events[0].event.payload                                    # Get the payload
+            schemaid = event.events[0].event.schema_id 
             schema = stub.GetSchema(
                     pb2.SchemaRequest(schema_id=schemaid),
-                    metadata=authmetadata).schema_json
-            decoded = decode(schema, payloadbytes)
-            entity_name = decoded['ChangeEventHeader']['entityName']
-            change_type = decoded['ChangeEventHeader']['changeType']
+                    metadata=authmetadata).schema_json 
+            decoded = decode(schema, payloadbytes)                                          # Decode the payload
+            entity_name = decoded['ChangeEventHeader']['entityName']                        # Get the entity name
+            change_type = decoded['ChangeEventHeader']['changeType']                        # Get the change type
             if change_type == 'CREATE':
-                print("Welcome", decoded['Name'], "to the Johnny Spell's Family!")
+                print("Welcome", decoded['Name'], "to the Johnny Spell's Family!")          # Print a welcome message
         else:
-            print("[", time.strftime('%b %d, %Y %I:%M%p %Z'),
-                        "] The subscription is active.")
+            print("[", time.strftime('%b %d, %Y %I:%M%p %Z'),                               # Print the time when the subscription is active
+                        "] The subscription is active.")                                    # Repeats about every minute
         latest_replay_id = event.latest_replay_id
